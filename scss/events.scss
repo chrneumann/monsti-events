@@ -1,0 +1,168 @@
+@import "compass";
+
+.monsti-events--events-upcoming {
+  padding: 0;
+  li {
+    @include clearfix;
+    list-style-type: none;
+    clear: both;
+    border-bottom: 1px solid #DDD;
+    min-height: 55px;
+    margin-bottom: 15px;
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.monsti-events--events-past {
+  padding: 0;
+  li {
+    @include inline-block;
+    vertical-align: top;
+    width: 200px;
+    margin-right: 55px;
+    .icon {
+      display: block;
+      float: left;
+    }
+    .date {
+      display: block;
+    }
+    .no-icon {
+      display: block;
+      width: 100%;
+      height: 100%;
+      /*
+      background: url("") center;
+      background-size: 100% auto;
+      */
+    }
+    .icon {
+      display: block;
+      width: 100%;
+      text-align: center;
+      height: 150px;
+      line-height: 150px;
+      width: 200px;
+      margin-bottom: 20px;
+      img, div {
+	      vertical-align: middle;
+	      @include border-radius(4px);
+	      border: 1px solid #CCC;
+	      max-height: 100%;
+	      max-width: 100%;
+      }
+    }
+  }
+}
+
+.monsti-events--event-images {
+  @include clearfix;
+  margin-top: 50px;
+  padding: 0;
+  list-style-type: none;
+  li {
+    @include inline-block;
+    vertical-align: top;
+    width: 200px;
+    margin-right: 55px;
+    a {
+      position: relative;
+      display: block;
+      text-align: center;
+      margin-right: 15px;
+      .thumbnail {
+	      height: 150px;
+	      width: 200px;
+	      img {
+	        vertical-align: middle;
+	        @include border-radius(4px);
+	        border: 1px solid #CCC;
+	        max-height: 100%;
+	        max-width: 100%;
+	      }
+      }
+      .title {
+	      margin: 0;
+	      width: 200px;
+      }
+    }
+  }
+}
+
+.monsti-events--events-past-embedded {
+  li {
+    display: block;
+    width: 100%;
+    .icon {
+      height: 57px;
+      line-height: 57px;
+      width: 75px;
+      margin: 0 15px 15px 0;
+      img, div {
+	      @include border-radius(3px);
+      }
+    }
+  }
+}
+
+/*
+.events-past {
+  padding: 0;
+  li {
+    @include inline-block;
+    vertical-align: top;
+    width: 200px;
+    margin-right: 55px;
+    .icon {
+      display: block;
+      float: left;
+    }
+    .no-icon {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: url("/aktionen/offenes-gruppentreffen-3/tierrechts-planungs-treffen?size=small_thumbnail") center;
+      background-size: 100% auto;
+    }
+    .icon {
+      display: block;
+      width: 100%;
+      text-align: center;
+      height: 150px;
+      line-height: 150px;
+      width: 200px;
+      margin-bottom: 20px;
+      img, div {
+	      vertical-align: middle;
+	      @include border-radius(4px);
+	      border: 1px solid #CCC;
+	      max-height: 100%;
+	      max-width: 100%;
+      }
+    }
+  }
+}
+
+
+*/
+
+.fancy-date {
+  box-sizing: border-box;
+  display: block;
+  float: left;
+  margin: 0px 10px 10px 0;
+  width: 40px;
+  height: 40px;
+  @include border-radius(10px);
+  color: white;
+  text-align: center;
+  padding-top: 5px;
+  line-height: 15px;
+  .fancy-date-day {
+    display: block;
+    font-weight: bold;
+  }
+}
+
