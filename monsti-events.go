@@ -45,6 +45,7 @@ func initNodeTypes(settings *util.MonstiSettings, session *service.Session,
 		Id:        "events.Event",
 		AddableTo: []string{"events.Events"},
 		Name:      util.GenLanguageMap(G("Event"), availableLocales),
+		Hide:      true,
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
 			{Id: "core.Body"},
