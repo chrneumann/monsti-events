@@ -1,0 +1,51 @@
+{{if not .PastOnly}}
+{{if not .Embedded}}
+<h2>Termine</h2>
+{{end}}
+<ul class="monsti-events--events monsti-events--events-upcoming ">
+  {{range .UpcomingEvents}}
+  <li>
+    <div class="description">
+      <div class="fancy-date">
+        {{with (.GetValue "events.StartTime").Time}}
+        <span class="fancy-date-day">{{.Format "2"}}</span>
+        <span class="fancy-date-month">{{G (.Format "Jan")}}</span>
+        {{end}}
+      </div>
+      <span class="title">
+        <a href="{{.Path}}">{{(.Node.GetField "core.Title").RenderHTML}}</a>
+      </span>
+    </div>
+  </li>
+  {{end}}
+</ul>
+{{end}}
+
+{{if not .UpcomingOnly}}
+{{if not .Embedded}}
+<h2>Vergangene Aktionen</h2>
+{{end}}
+<ul class="monsti-events--events monsti-events--events-past {{if .Embedded}}monsti-events--events-past-embedded{{end}}">
+  {{range .PastEvents}}
+  <li>
+    <a class="icon" href="{{.Path}}/">
+      {{with .Image}}
+      <img src="{{.Path}}?size=small_thumbnail">
+      {{else}}
+      <div class="no-icon"></div>
+      {{end}}
+    </a>
+    <div class="description">
+      <span class="date">
+        {{with (.GetValue "events.StartTime").Time}}
+        {{template "utils/date" .}}
+        {{end}}
+      </span>
+      <span class="title">
+        <a href="{{.Path}}">{{(.GetField "core.Title").RenderHTML}}</a>
+      </span>
+    </div>
+  </li>
+  {{end}}
+</ul>
+{{end}}

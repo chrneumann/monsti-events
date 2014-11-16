@@ -1,0 +1,12 @@
+<article class="{{if .Embedded}}embedded{{end}} node-type-core-Event">
+  <div>
+    <strong>
+      {{with (.Node.GetValue "events.StartTime").Time}}{{.Format "2.1.2006, 15:04 Uhr"}}{{end}}<br>
+      {{(.Node.GetField "events.Place").RenderHTML}}<br>
+    </strong>
+  </div>
+  <div>
+    {{(.Node.GetField "core.Body").RenderHTML}}<br>
+  </div>
+  {{.EventImages}}
+</article>

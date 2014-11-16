@@ -27,16 +27,153 @@ import (
 	"log"
 	"os"
 
+	"sort"
+	"strconv"
+	"time"
 	"pkg.monsti.org/gettext"
 	"pkg.monsti.org/monsti/api/service"
 	"pkg.monsti.org/monsti/api/util"
-	"pkg.monsti.org/monsti/api/util/template"
+	mtemplate "pkg.monsti.org/monsti/api/util/template"
 )
 
 var logger *log.Logger
-var renderer template.Renderer
+var renderer mtemplate.Renderer
 
 var availableLocales = []string{"de", "en"}
+
+type nodeSort struct {
+	Nodes  []*service.Node
+	Sorter func(left, right *service.Node) bool
+}
+
+func (s *nodeSort) Len() int {
+	return len(s.Nodes)
+}
+
+func (s *nodeSort) Swap(i, j int) {
+	s.Nodes[i], s.Nodes[j] = s.Nodes[j], s.Nodes[i]
+}
+
+func (s *nodeSort) Less(i, j int) bool {
+	return s.Sorter(s.Nodes[i], s.Nodes[j])
+}
+
+type eventCtx struct {
+	*service.Node
+	Image *service.Node
+}
+
+// Upcoming checks if this is an upcoming event.
+func (e eventCtx) Upcoming() bool {
+	return e.GetField("events.StartTime").(*service.DateTimeField).
+		Time.After(time.Now())
+}
+
+func getEvents(req *service.Request, s *service.Session, pastOnly,
+	upcomingOnly bool, limit int) (
+	[]eventCtx, []eventCtx, error) {
+	dataServ := s.Monsti()
+	events, err := dataServ.GetChildren(req.Site, "/aktionen")
+	if err != nil {
+		return nil, nil, fmt.Errorf("Could not fetch children: %v", err)
+	}
+	order := func(left, right *service.Node) bool {
+		lleft := left.GetField("events.StartTime").(*service.DateTimeField).Time
+		rright := right.GetField("events.StartTime").(*service.DateTimeField).Time
+		return lleft.Before(rright)
+	}
+	sort.Sort(sort.Reverse(&nodeSort{events, order}))
+
+	eventCtxs := make([]eventCtx, len(events))
+	pastIdx := 0
+	pastCount := 0
+	for idx := range events {
+		eventCtxs[idx].Node = events[idx]
+		if idx == pastIdx && eventCtxs[idx].Upcoming() {
+			pastIdx += 1
+		} else {
+			if upcomingOnly {
+				break
+			}
+			pastCount += 1
+			images, err := dataServ.GetChildren(req.Site, events[idx].Path)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Could not fetch children: %v", err)
+			}
+			if len(images) > 0 {
+				eventCtxs[idx].Image = images[0]
+			}
+		}
+		if limit != -1 && pastCount > limit {
+			break
+		}
+	}
+	for i, j := 0, pastIdx-1; i < j; i, j = i+1, j-1 {
+		eventCtxs[i], eventCtxs[j] = eventCtxs[j], eventCtxs[i]
+	}
+	pastEnd := len(eventCtxs)
+	if limit != -1 && pastEnd > pastIdx+limit {
+		pastEnd = pastIdx + limit
+	}
+	if upcomingOnly {
+		pastEnd = pastIdx
+	}
+	upcomingEnd := pastIdx
+	if pastOnly {
+		upcomingEnd = 0
+	}
+	return eventCtxs[:upcomingEnd], eventCtxs[pastIdx:pastEnd], nil
+}
+
+func getEventContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
+	map[string]string, error) {
+	req, err := s.Monsti().GetRequest(reqId)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get request: %v", err)
+	}
+	images, err := s.Monsti().GetChildren(req.Site, req.NodePath)
+	if err != nil {
+		return nil, fmt.Errorf("Could not fetch images: %v", err)
+	}
+	rendered, err := renderer.Render("events/event-images",
+		mtemplate.Context{"Images": images},
+		req.Session.Locale, m.GetSiteTemplatesPath(req.Site))
+	if err != nil {
+		return nil, fmt.Errorf("Could not render template: %v", err)
+	}
+	return map[string]string{"EventImages": rendered}, nil
+}
+
+func getEventsContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
+	map[string]string, error) {
+	req, err := s.Monsti().GetRequest(reqId)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get request: %v", err)
+	}
+	pastOnly := len(req.Query["past"]) > 0
+	upcomingOnly := len(req.Query["upcoming"]) > 0
+	limit := -1
+	if limitParam, err := strconv.Atoi(req.Query.Get("limit")); err == nil {
+		limit = limitParam
+		if limit < 1 {
+			limit = 1
+		}
+	}
+	context := mtemplate.Context{}
+	context["UpcomingOnly"] = upcomingOnly
+	context["PastOnly"] = pastOnly
+	context["UpcomingEvents"], context["PastEvents"], err = getEvents(
+		req, s, pastOnly, upcomingOnly, limit)
+	if err != nil {
+		return nil, fmt.Errorf("Could not retrieve events: %v", err)
+	}
+	rendered, err := renderer.Render("events/event-list", context,
+		req.Session.Locale, m.GetSiteTemplatesPath(req.Site))
+	if err != nil {
+		return nil, fmt.Errorf("Could not render template: %v", err)
+	}
+	return map[string]string{"EventList": rendered}, nil
+}
 
 func initNodeTypes(settings *util.MonstiSettings, session *service.Session,
 	logger *log.Logger) error {
@@ -97,6 +234,8 @@ func main() {
 	gettext.DefaultLocales.Domain = "monsti-events"
 	gettext.DefaultLocales.LocaleDir = settings.Directories.Locale
 
+	renderer.Root = settings.GetTemplatesPath()
+
 	monstiPath := settings.GetServicePath(service.MonstiService.String())
 	sessions := service.NewSessionPool(1, monstiPath)
 	session, err := sessions.New()
@@ -107,5 +246,42 @@ func main() {
 
 	if err := initNodeTypes(settings, session, logger); err != nil {
 		logger.Fatalf("Could not init utopiahost module: %v", err)
+	}
+
+	// Add a signal handler
+	handler := service.NewNodeContextHandler(
+		func(req uint, nodeType string) map[string]string {
+			switch nodeType {
+			case "events.Events":
+				ctx, err := getEventsContext(req, session, settings)
+				if err != nil {
+					logger.Printf("Could not get events context: %v", err)
+				}
+				return ctx
+			case "events.Event":
+				ctx, err := getEventContext(req, session, settings)
+				if err != nil {
+					logger.Printf("Could not get event context: %v", err)
+				}
+				return ctx
+			default:
+				return nil
+			}
+		})
+	if err := session.Monsti().AddSignalHandler(handler); err != nil {
+		logger.Fatalf("Could not add signal handler: %v", err)
+	}
+
+	// At the end of the initialization, every module has to call
+	// ModuleInitDone. Monsti won't complete its startup until all
+	// modules have called this method.
+	if err := session.Monsti().ModuleInitDone("example-module"); err != nil {
+		logger.Fatalf("Could not finish initialization: %v", err)
+	}
+
+	for {
+		if err := session.Monsti().WaitSignal(); err != nil {
+			logger.Fatalf("Could not wait for signal: %v", err)
+		}
 	}
 }

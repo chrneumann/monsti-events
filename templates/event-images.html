@@ -1,0 +1,14 @@
+<ul class="monsti-events--event-images">
+  {{range .Images}}
+  <li>
+    <a href="{{.Path}}/">
+      <div class="thumbnail">
+        <img src="{{.Path}}?size=small_thumbnail">
+      </div>
+      <div class="title">
+        {{(.GetField "core.Title").RenderHTML}}
+      </div>
+    </a>
+  </li>
+  {{end}}
+</ul>
