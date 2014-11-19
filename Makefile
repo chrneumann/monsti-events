@@ -48,9 +48,8 @@ dist-deb: dist
 		-C $(DIST_PATH) \
 		-n monsti-$(MODULE_NAME) \
 		-p dist/monsti-$(MODULE_NAME)_$(MODULE_VERSION)-$(DEB_VERSION).deb \
-		--version $(MMODULE_VERSION)-$(DEB_VERSION) \
-		--config-files etc \
-		etc usr var
+		--version $(MODULE_VERSION)-$(DEB_VERSION) \
+		usr
 
 go/src/$(IMPORT_PATH):
 	mkdir -p $(dir $(GOPATH)/src/$(IMPORT_PATH))
