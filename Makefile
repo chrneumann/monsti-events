@@ -21,17 +21,18 @@ DIST_PATH=dist/$(PACKAGE_NAME)
 
 all: module
 
-dist: module bcrypt
+dist: module
 	rm -Rf $(DIST_PATH)
 	mkdir -p $(DIST_PATH)/usr/bin
 	cp go/bin/* $(DIST_PATH)/usr/bin
 	mkdir -p $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
-	cp -RL static templates $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
+	cp -RL templates $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
 
 	cp -RL locale $(DIST_PATH)/usr/share
 	find $(DIST_PATH)/usr/share/locale/ -not -name "*.mo" -exec rm {} \;
 	rm -f $(DIST_PATH)/usr/share/locale/*.pot
 
+	mkdir -p $(DIST_PATH)/usr/share/doc/monsti-$(MODULE_NAME)
 	cp CHANGES.md COPYING LICENSE README.md $(DIST_PATH)/usr/share/doc/monsti-$(MODULE_NAME)
 
 	find $(DIST_PATH) -type d -exec chmod 755 {} \;
