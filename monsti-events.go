@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"sort"
@@ -125,7 +126,8 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 	return eventCtxs[:upcomingEnd], eventCtxs[pastIdx:pastEnd], nil
 }
 
-func getEventContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
+func getEventContext(reqId uint, embed *service.EmbedNode,
+	s *service.Session, m *util.MonstiSettings) (
 	map[string]string, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
@@ -144,16 +146,25 @@ func getEventContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
 	return map[string]string{"EventImages": rendered}, nil
 }
 
-func getEventsContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
+func getEventsContext(reqId uint, embed *service.EmbedNode,
+	s *service.Session, m *util.MonstiSettings) (
 	map[string]string, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get request: %v", err)
 	}
-	pastOnly := len(req.Query["past"]) > 0
-	upcomingOnly := len(req.Query["upcoming"]) > 0
+	query := req.Query
+	if embed != nil {
+		url, err := url.Parse(embed.URI)
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse embed URI")
+		}
+		query = url.Query()
+	}
+	pastOnly := len(query["past"]) > 0
+	upcomingOnly := len(query["upcoming"]) > 0
 	limit := -1
-	if limitParam, err := strconv.Atoi(req.Query.Get("limit")); err == nil {
+	if limitParam, err := strconv.Atoi(query.Get("limit")); err == nil {
 		limit = limitParam
 		if limit < 1 {
 			limit = 1
@@ -164,6 +175,7 @@ func getEventsContext(reqId uint, s *service.Session, m *util.MonstiSettings) (
 	context["PastOnly"] = pastOnly
 	context["UpcomingEvents"], context["PastEvents"], err = getEvents(
 		req, s, pastOnly, upcomingOnly, limit)
+	context["Embedded"] = embed
 	if err != nil {
 		return nil, fmt.Errorf("Could not retrieve events: %v", err)
 	}
@@ -250,16 +262,17 @@ func main() {
 
 	// Add a signal handler
 	handler := service.NewNodeContextHandler(
-		func(req uint, nodeType string) map[string]string {
+		func(req uint, nodeType string,
+			embedNode *service.EmbedNode) map[string]string {
 			switch nodeType {
 			case "events.Events":
-				ctx, err := getEventsContext(req, session, settings)
+				ctx, err := getEventsContext(req, embedNode, session, settings)
 				if err != nil {
 					logger.Printf("Could not get events context: %v", err)
 				}
 				return ctx
 			case "events.Event":
-				ctx, err := getEventContext(req, session, settings)
+				ctx, err := getEventContext(req, embedNode, session, settings)
 				if err != nil {
 					logger.Printf("Could not get event context: %v", err)
 				}
