@@ -25,8 +25,8 @@ dist: module
 	rm -Rf $(DIST_PATH)
 	mkdir -p $(DIST_PATH)/usr/bin
 	cp $(MODULE_PROGRAMS) $(DIST_PATH)/usr/bin
-	mkdir -p $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
-	cp -RL templates $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
+	mkdir -p $(DIST_PATH)/usr/share/monsti/templates/$(MODULE_NAME)
+	cp -RL templates $(DIST_PATH)/usr/share/monsti/templates/$(MODULE_NAME)
 
 	cp -RL locale $(DIST_PATH)/usr/share
 	find $(DIST_PATH)/usr/share/locale/ -not -name "*.mo" -exec rm {} \;
