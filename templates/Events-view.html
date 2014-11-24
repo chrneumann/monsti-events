@@ -1,5 +1,7 @@
 <article class="{{if .Embedded}}embedded{{end}} node-type-core-Events">
+  {{if not .Embedded}}
   <h1>{{(.Node.GetField "core.Title").RenderHTML}}</h1>
+  {{end}}
   <div>
     {{.EventList}}
   </div>
