@@ -77,6 +77,7 @@
     vertical-align: top;
     width: 200px;
     margin-right: 55px;
+    margin-bottom: 20px;
     a {
       position: relative;
       display: block;
@@ -175,3 +176,8 @@
   }
 }
 
+article.node-type-events-Event {
+  header {
+    margin-bottom: 20px;
+  }
+}
