@@ -6,15 +6,15 @@
   {{range .UpcomingEvents}}
   <li>
     <div class="description">
-      <div class="fancy-date">
-        {{with (.GetValue "events.StartTime").Time}}
-        <span class="fancy-date-day">{{.Format "2"}}</span>
-        <span class="fancy-date-month">{{G (.Format "Jan")}}</span>
-        {{end}}
+      <div class="fancy-date-wrap">
+        <div class="fancy-date">
+          {{with (.GetValue "events.StartTime").Time}}
+          <span class="fancy-date-day">{{.Format "2"}}</span>
+          <span class="fancy-date-month">{{G (.Format "Jan")}}</span>
+          {{end}}
+        </div>
       </div>
-      <span class="title">
-        <a href="{{.Path}}">{{(.Node.GetField "core.Title").RenderHTML}}</a>
-      </span>
+      <a href="{{.Path}}">{{(.Node.GetField "core.Title").RenderHTML}}</a>
     </div>
   </li>
   {{end}}

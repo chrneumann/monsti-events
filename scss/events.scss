@@ -12,6 +12,16 @@
     &:last-child {
       border-bottom: none;
     }
+    .description {
+      display: table;
+      .fancy-date-wrap, a {
+        display: table-cell;
+        vertical-align: middle;
+      }
+      a {
+        padding-left: 10px;
+      }
+    }
   }
 }
 
@@ -151,8 +161,6 @@
 .fancy-date {
   box-sizing: border-box;
   display: block;
-  float: left;
-  margin: 0px 10px 10px 0;
   width: 40px;
   height: 40px;
   @include border-radius(10px);
