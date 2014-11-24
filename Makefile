@@ -24,7 +24,7 @@ all: module
 dist: module
 	rm -Rf $(DIST_PATH)
 	mkdir -p $(DIST_PATH)/usr/bin
-	cp go/bin/* $(DIST_PATH)/usr/bin
+	cp $(MODULE_PROGRAMS) $(DIST_PATH)/usr/bin
 	mkdir -p $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
 	cp -RL templates $(DIST_PATH)/usr/share/monsti-$(MODULE_NAME)
 
