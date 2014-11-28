@@ -22,23 +22,17 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 	"net/url"
-	"os"
 
 	"sort"
 	"strconv"
 	"time"
-	"pkg.monsti.org/gettext"
 	"pkg.monsti.org/monsti/api/service"
 	"pkg.monsti.org/monsti/api/util"
+	"pkg.monsti.org/monsti/api/util/module"
 	mtemplate "pkg.monsti.org/monsti/api/util/template"
 )
-
-var logger *log.Logger
-var renderer mtemplate.Renderer
 
 var availableLocales = []string{"de", "en"}
 
@@ -127,7 +121,7 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 }
 
 func getEventContext(reqId uint, embed *service.EmbedNode,
-	s *service.Session, m *util.MonstiSettings) (
+	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
 	map[string]string, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
@@ -147,7 +141,7 @@ func getEventContext(reqId uint, embed *service.EmbedNode,
 }
 
 func getEventsContext(reqId uint, embed *service.EmbedNode,
-	s *service.Session, m *util.MonstiSettings) (
+	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
 	map[string]string, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
@@ -187,9 +181,10 @@ func getEventsContext(reqId uint, embed *service.EmbedNode,
 	return map[string]string{"EventList": rendered}, nil
 }
 
-func initNodeTypes(settings *util.MonstiSettings, session *service.Session,
-	logger *log.Logger) error {
+func setup(c *module.ModuleContext) error {
 	G := func(in string) string { return in }
+	m := c.Session.Monsti()
+
 	nodeType := service.NodeType{
 		Id:        "events.Event",
 		AddableTo: []string{"events.Events"},
@@ -211,7 +206,7 @@ func initNodeTypes(settings *util.MonstiSettings, session *service.Session,
 			},
 		},
 	}
-	if err := session.Monsti().RegisterNodeType(&nodeType); err != nil {
+	if err := m.RegisterNodeType(&nodeType); err != nil {
 		return fmt.Errorf("Could not register %q node type: %v", nodeType.Id, err)
 	}
 
@@ -223,78 +218,44 @@ func initNodeTypes(settings *util.MonstiSettings, session *service.Session,
 			{Id: "core.Title"},
 		},
 	}
-	if err := session.Monsti().RegisterNodeType(&nodeType); err != nil {
+	if err := m.RegisterNodeType(&nodeType); err != nil {
 		return fmt.Errorf("Could not register %q node type: %v", nodeType.Id, err)
 	}
 
-	return nil
-}
-
-func main() {
-	logger = log.New(os.Stderr, "events ", log.LstdFlags)
-	// Load configuration
-	flag.Parse()
-	if flag.NArg() != 1 {
-		logger.Fatal("Expecting configuration path.")
-	}
-	cfgPath := util.GetConfigPath(flag.Arg(0))
-	settings, err := util.LoadMonstiSettings(cfgPath)
-	if err != nil {
-		logger.Fatal("Could not load settings: ", err)
-	}
-
-	gettext.DefaultLocales.Domain = "monsti-events"
-	gettext.DefaultLocales.LocaleDir = settings.Directories.Locale
-
-	renderer.Root = settings.GetTemplatesPath()
-
-	monstiPath := settings.GetServicePath(service.MonstiService.String())
-	sessions := service.NewSessionPool(1, monstiPath)
-	session, err := sessions.New()
-	if err != nil {
-		logger.Fatalf("Could not get session: %v", err)
-	}
-	defer sessions.Free(session)
-
-	if err := initNodeTypes(settings, session, logger); err != nil {
-		logger.Fatalf("Could not init utopiahost module: %v", err)
-	}
-
-	// Add a signal handler
 	handler := service.NewNodeContextHandler(
 		func(req uint, nodeType string,
 			embedNode *service.EmbedNode) map[string]string {
+			session, err := c.Sessions.New()
+			if err != nil {
+				c.Logger.Fatalf("Could not get session: %v", err)
+				return nil
+			}
+			defer c.Sessions.Free(session)
 			switch nodeType {
 			case "events.Events":
-				ctx, err := getEventsContext(req, embedNode, session, settings)
+				ctx, err := getEventsContext(req, embedNode, session, c.Settings,
+					c.Renderer)
 				if err != nil {
-					logger.Printf("Could not get events context: %v", err)
+					c.Logger.Printf("Could not get events context: %v", err)
 				}
 				return ctx
 			case "events.Event":
-				ctx, err := getEventContext(req, embedNode, session, settings)
+				ctx, err := getEventContext(req, embedNode, session, c.Settings,
+					c.Renderer)
 				if err != nil {
-					logger.Printf("Could not get event context: %v", err)
+					c.Logger.Printf("Could not get event context: %v", err)
 				}
 				return ctx
 			default:
 				return nil
 			}
 		})
-	if err := session.Monsti().AddSignalHandler(handler); err != nil {
-		logger.Fatalf("Could not add signal handler: %v", err)
+	if err := m.AddSignalHandler(handler); err != nil {
+		c.Logger.Fatalf("Could not add signal handler: %v", err)
 	}
+	return nil
+}
 
-	// At the end of the initialization, every module has to call
-	// ModuleInitDone. Monsti won't complete its startup until all
-	// modules have called this method.
-	if err := session.Monsti().ModuleInitDone("example-module"); err != nil {
-		logger.Fatalf("Could not finish initialization: %v", err)
-	}
-
-	for {
-		if err := session.Monsti().WaitSignal(); err != nil {
-			logger.Fatalf("Could not wait for signal: %v", err)
-		}
-	}
+func main() {
+	module.StartModule("events", setup)
 }
