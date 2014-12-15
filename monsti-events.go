@@ -188,7 +188,7 @@ func setup(c *module.ModuleContext) error {
 	nodeType := service.NodeType{
 		Id:        "events.Event",
 		AddableTo: []string{"events.Events"},
-		Name:      util.GenLanguageMap(G("Event"), availableLocales),
+		Name:      util.GenLanguageMap(G("Event List"), availableLocales),
 		Hide:      true,
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
