@@ -122,7 +122,7 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 
 func getEventContext(reqId uint, embed *service.EmbedNode,
 	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
-	map[string]string, error) {
+	map[string][]byte, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get request: %v", err)
@@ -137,21 +137,21 @@ func getEventContext(reqId uint, embed *service.EmbedNode,
 	if err != nil {
 		return nil, fmt.Errorf("Could not render template: %v", err)
 	}
-	return map[string]string{"EventImages": rendered}, nil
+	return map[string][]byte{"EventImages": rendered}, nil
 }
 
 func getEventsContext(reqId uint, embed *service.EmbedNode,
 	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
-	map[string]string, error) {
+	map[string][]byte, *service.CacheMods, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get request: %v", err)
+		return nil, nil, fmt.Errorf("Could not get request: %v", err)
 	}
 	query := req.Query
 	if embed != nil {
 		url, err := url.Parse(embed.URI)
 		if err != nil {
-			return nil, fmt.Errorf("Could not parse embed URI")
+			return nil, nil, fmt.Errorf("Could not parse embed URI")
 		}
 		query = url.Query()
 	}
@@ -171,14 +171,24 @@ func getEventsContext(reqId uint, embed *service.EmbedNode,
 		req, s, pastOnly, upcomingOnly, limit)
 	context["Embedded"] = embed
 	if err != nil {
-		return nil, fmt.Errorf("Could not retrieve events: %v", err)
+		return nil, nil, fmt.Errorf("Could not retrieve events: %v", err)
 	}
 	rendered, err := renderer.Render("events/event-list", context,
 		req.Session.Locale, m.GetSiteTemplatesPath(req.Site))
 	if err != nil {
-		return nil, fmt.Errorf("Could not render template: %v", err)
+		return nil, nil, fmt.Errorf("Could not render template: %v", err)
 	}
-	return map[string]string{"EventList": rendered}, nil
+
+	var expire time.Time
+	if len(context["UpcomingEvents"].([]eventCtx)) > 0 {
+		expire = context["UpcomingEvents"].([]eventCtx)[0].GetField(
+			"events.StartTime").(*service.DateTimeField).Time
+	}
+	mods := &service.CacheMods{
+		Deps:   []service.CacheDep{{Node: req.NodePath, Descend: 2}},
+		Expire: expire,
+	}
+	return map[string][]byte{"EventList": rendered}, mods, nil
 }
 
 func setup(c *module.ModuleContext) error {
@@ -188,7 +198,7 @@ func setup(c *module.ModuleContext) error {
 	nodeType := service.NodeType{
 		Id:        "events.Event",
 		AddableTo: []string{"events.Events"},
-		Name:      util.GenLanguageMap(G("Event List"), availableLocales),
+		Name:      util.GenLanguageMap(G("Event"), availableLocales),
 		Hide:      true,
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
@@ -213,7 +223,7 @@ func setup(c *module.ModuleContext) error {
 	nodeType = service.NodeType{
 		Id:        "events.Events",
 		AddableTo: nil,
-		Name:      util.GenLanguageMap(G("Events"), availableLocales),
+		Name:      util.GenLanguageMap(G("Event list"), availableLocales),
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
 		},
@@ -224,30 +234,30 @@ func setup(c *module.ModuleContext) error {
 
 	handler := service.NewNodeContextHandler(
 		func(req uint, nodeType string,
-			embedNode *service.EmbedNode) map[string]string {
+			embedNode *service.EmbedNode) (
+			map[string][]byte, *service.CacheMods, error) {
 			session, err := c.Sessions.New()
 			if err != nil {
-				c.Logger.Fatalf("Could not get session: %v", err)
-				return nil
+				return nil, nil, fmt.Errorf("Could not get session: %v", err)
 			}
 			defer c.Sessions.Free(session)
 			switch nodeType {
 			case "events.Events":
-				ctx, err := getEventsContext(req, embedNode, session, c.Settings,
+				ctx, mods, err := getEventsContext(req, embedNode, session, c.Settings,
 					c.Renderer)
 				if err != nil {
-					c.Logger.Printf("Could not get events context: %v", err)
+					return nil, nil, fmt.Errorf("Could not get events context: %v", err)
 				}
-				return ctx
+				return ctx, mods, nil
 			case "events.Event":
 				ctx, err := getEventContext(req, embedNode, session, c.Settings,
 					c.Renderer)
 				if err != nil {
-					c.Logger.Printf("Could not get event context: %v", err)
+					return nil, nil, fmt.Errorf("Could not get event context: %v", err)
 				}
-				return ctx
+				return ctx, nil, nil
 			default:
-				return nil
+				return nil, nil, nil
 			}
 		})
 	if err := m.AddSignalHandler(handler); err != nil {
