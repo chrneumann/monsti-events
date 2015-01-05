@@ -122,22 +122,25 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 
 func getEventContext(reqId uint, embed *service.EmbedNode,
 	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
-	map[string][]byte, error) {
+	map[string][]byte, *service.CacheMods, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get request: %v", err)
+		return nil, nil, fmt.Errorf("Could not get request: %v", err)
 	}
 	images, err := s.Monsti().GetChildren(req.Site, req.NodePath)
 	if err != nil {
-		return nil, fmt.Errorf("Could not fetch images: %v", err)
+		return nil, nil, fmt.Errorf("Could not fetch images: %v", err)
 	}
 	rendered, err := renderer.Render("events/event-images",
 		mtemplate.Context{"Images": images},
 		req.Session.Locale, m.GetSiteTemplatesPath(req.Site))
 	if err != nil {
-		return nil, fmt.Errorf("Could not render template: %v", err)
+		return nil, nil, fmt.Errorf("Could not render template: %v", err)
 	}
-	return map[string][]byte{"EventImages": rendered}, nil
+	mods := &service.CacheMods{
+		Deps: []service.CacheDep{{Node: req.NodePath, Descend: 1}},
+	}
+	return map[string][]byte{"EventImages": rendered}, mods, nil
 }
 
 func getEventsContext(reqId uint, embed *service.EmbedNode,
@@ -250,12 +253,12 @@ func setup(c *module.ModuleContext) error {
 				}
 				return ctx, mods, nil
 			case "events.Event":
-				ctx, err := getEventContext(req, embedNode, session, c.Settings,
+				ctx, mods, err := getEventContext(req, embedNode, session, c.Settings,
 					c.Renderer)
 				if err != nil {
 					return nil, nil, fmt.Errorf("Could not get event context: %v", err)
 				}
-				return ctx, nil, nil
+				return ctx, mods, nil
 			default:
 				return nil, nil, nil
 			}
