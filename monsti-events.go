@@ -1,5 +1,5 @@
 // This file is part of Monsti, a web content management system.
-// Copyright 2014 Christian Neumann
+// Copyright 2014-2015 Christian Neumann
 //
 // Monsti is free software: you can redistribute it and/or modify it under the
 // terms of the GNU Affero General Public License as published by the Free
@@ -29,8 +29,9 @@ import (
 	"strconv"
 	"time"
 	"pkg.monsti.org/monsti/api/service"
-	"pkg.monsti.org/monsti/api/util"
+	"pkg.monsti.org/monsti/api/util/i18n"
 	"pkg.monsti.org/monsti/api/util/module"
+	"pkg.monsti.org/monsti/api/util/settings"
 	mtemplate "pkg.monsti.org/monsti/api/util/template"
 )
 
@@ -121,7 +122,7 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 }
 
 func getEventContext(reqId uint, embed *service.EmbedNode,
-	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
+	s *service.Session, m *settings.Monsti, renderer *mtemplate.Renderer) (
 	map[string][]byte, *service.CacheMods, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
@@ -144,7 +145,7 @@ func getEventContext(reqId uint, embed *service.EmbedNode,
 }
 
 func getEventsContext(reqId uint, embed *service.EmbedNode,
-	s *service.Session, m *util.MonstiSettings, renderer *mtemplate.Renderer) (
+	s *service.Session, m *settings.Monsti, renderer *mtemplate.Renderer) (
 	map[string][]byte, *service.CacheMods, error) {
 	req, err := s.Monsti().GetRequest(reqId)
 	if err != nil {
@@ -201,20 +202,20 @@ func setup(c *module.ModuleContext) error {
 	nodeType := service.NodeType{
 		Id:        "events.Event",
 		AddableTo: []string{"events.Events"},
-		Name:      util.GenLanguageMap(G("Event"), availableLocales),
+		Name:      i18n.GenLanguageMap(G("Event"), availableLocales),
 		Hide:      true,
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
 			{Id: "core.Body"},
 			{
 				Id:   "events.Place",
-				Name: util.GenLanguageMap(G("Place"), availableLocales),
+				Name: i18n.GenLanguageMap(G("Place"), availableLocales),
 				Type: "Text",
 			},
 			{
 				Id:       "events.StartTime",
 				Required: true,
-				Name:     util.GenLanguageMap(G("Start"), availableLocales),
+				Name:     i18n.GenLanguageMap(G("Start"), availableLocales),
 				Type:     "DateTime",
 			},
 		},
@@ -226,7 +227,7 @@ func setup(c *module.ModuleContext) error {
 	nodeType = service.NodeType{
 		Id:        "events.Events",
 		AddableTo: nil,
-		Name:      util.GenLanguageMap(G("Event list"), availableLocales),
+		Name:      i18n.GenLanguageMap(G("Event list"), availableLocales),
 		Fields: []*service.NodeField{
 			{Id: "core.Title"},
 		},
