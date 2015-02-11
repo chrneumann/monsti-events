@@ -1,15 +1,15 @@
 <article class="{{if .Embedded}}embedded{{end}} node-type-events-Event">
   <header>
     {{if not .Embedded}}
-    <h1>{{(.Node.GetField "core.Title").RenderHTML}}</h1>
+    <h1>{{(index .Node.Fields "core.Title").RenderHTML}}</h1>
     {{end}}
     <strong>
-      {{with (.Node.GetValue "events.StartTime").Time}}{{.Format "2.1.2006, 15:04 Uhr"}}{{end}}<br>
-      {{(.Node.GetField "events.Place").RenderHTML}}<br>
+      {{with (index .Node.Fields "events.StartTime").Time}}{{.Format "2.1.2006, 15:04 Uhr"}}{{end}}<br>
+      {{(index .Node.Fields "events.Place").RenderHTML}}<br>
     </strong>
   </header>
   <div>
-    {{(.Node.GetField "core.Body").RenderHTML}}<br>
+    {{(index .Node.Fields "core.Body").RenderHTML}}<br>
   </div>
   {{.EventImages}}
 </article>

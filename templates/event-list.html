@@ -8,13 +8,13 @@
     <div class="description">
       <div class="fancy-date-wrap">
         <div class="fancy-date">
-          {{with (.GetValue "events.StartTime").Time}}
+          {{with (index .Fields "events.StartTime").Time}}
           <span class="fancy-date-day">{{.Format "2"}}</span>
           <span class="fancy-date-month">{{G (.Format "Jan")}}</span>
           {{end}}
         </div>
       </div>
-      <a href="{{.Path}}">{{(.Node.GetField "core.Title").RenderHTML}}</a>
+      <a href="{{.Path}}">{{(index .Node.Fields "core.Title").RenderHTML}}</a>
     </div>
   </li>
   {{end}}
@@ -37,12 +37,12 @@
     </a>
     <div class="description">
       <span class="date">
-        {{with (.GetValue "events.StartTime").Time}}
+        {{with (index .Fields "events.StartTime").Time}}
         {{template "utils/date" .}}
         {{end}}
       </span>
       <span class="title">
-        <a href="{{.Path}}">{{(.GetField "core.Title").RenderHTML}}</a>
+        <a href="{{.Path}}">{{(index .Fields "core.Title").RenderHTML}}</a>
       </span>
     </div>
   </li>

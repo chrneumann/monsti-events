@@ -6,7 +6,7 @@
         <img src="{{.Path}}?size=small_thumbnail">
       </div>
       <div class="title">
-        {{(.GetField "core.Title").RenderHTML}}
+        {{(index .Fields "core.Title").RenderHTML}}
       </div>
     </a>
   </li>

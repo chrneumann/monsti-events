@@ -61,7 +61,7 @@ type eventCtx struct {
 
 // Upcoming checks if this is an upcoming event.
 func (e eventCtx) Upcoming() bool {
-	return e.GetField("events.StartTime").(*service.DateTimeField).
+	return e.Fields["events.StartTime"].(*service.DateTimeField).
 		Time.After(time.Now())
 }
 
@@ -74,8 +74,8 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 		return nil, nil, fmt.Errorf("Could not fetch children: %v", err)
 	}
 	order := func(left, right *service.Node) bool {
-		lleft := left.GetField("events.StartTime").(*service.DateTimeField).Time
-		rright := right.GetField("events.StartTime").(*service.DateTimeField).Time
+		lleft := left.Fields["events.StartTime"].(*service.DateTimeField).Time
+		rright := right.Fields["events.StartTime"].(*service.DateTimeField).Time
 		return lleft.Before(rright)
 	}
 	sort.Sort(sort.Reverse(&nodeSort{events, order}))
@@ -185,8 +185,7 @@ func getEventsContext(reqId uint, embed *service.EmbedNode,
 
 	var expire time.Time
 	if len(context["UpcomingEvents"].([]eventCtx)) > 0 {
-		expire = context["UpcomingEvents"].([]eventCtx)[0].GetField(
-			"events.StartTime").(*service.DateTimeField).Time
+		expire = context["UpcomingEvents"].([]eventCtx)[0].Fields["events.StartTime"].(*service.DateTimeField).Time
 	}
 	mods := &service.CacheMods{
 		Deps:   []service.CacheDep{{Node: req.NodePath, Descend: 2}},
