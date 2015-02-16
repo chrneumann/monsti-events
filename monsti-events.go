@@ -219,15 +219,10 @@ func setup(c *module.ModuleContext) error {
 		return fmt.Errorf("Could not register %q node type: %v", nodeType.Id, err)
 	}
 
-	handler := service.NewNodeContextHandler(
-		func(req uint, nodeType string,
+	handler := service.NewNodeContextHandler(c.Sessions,
+		func(req uint, session *service.Session, nodeType string,
 			embedNode *service.EmbedNode) (
 			map[string][]byte, *service.CacheMods, error) {
-			session, err := c.Sessions.New()
-			if err != nil {
-				return nil, nil, fmt.Errorf("Could not get session: %v", err)
-			}
-			defer c.Sessions.Free(session)
 			switch nodeType {
 			case "events.Events":
 				ctx, mods, err := getEventsContext(req, embedNode, session, c.Settings,
