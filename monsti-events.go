@@ -52,8 +52,8 @@ func (e eventCtx) Upcoming() bool {
 func getEvents(req *service.Request, s *service.Session, pastOnly,
 	upcomingOnly bool, limit int) (
 	[]eventCtx, []eventCtx, error) {
-	dataServ := s.Monsti()
-	events, err := dataServ.GetChildren(req.Site, "/aktionen")
+	m := s.Monsti()
+	events, err := m.GetChildren(req.Site, "/aktionen")
 	if err != nil {
 		return nil, nil, fmt.Errorf("Could not fetch children: %v", err)
 	}
@@ -76,7 +76,7 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 				break
 			}
 			pastCount += 1
-			images, err := dataServ.GetChildren(req.Site, events[idx].Path)
+			images, err := m.GetChildren(req.Site, events[idx].Path)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Could not fetch children: %v", err)
 			}
