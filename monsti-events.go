@@ -31,28 +31,12 @@ import (
 	"pkg.monsti.org/monsti/api/service"
 	"pkg.monsti.org/monsti/api/util/i18n"
 	"pkg.monsti.org/monsti/api/util/module"
+	"pkg.monsti.org/monsti/api/util/nodes"
 	"pkg.monsti.org/monsti/api/util/settings"
 	mtemplate "pkg.monsti.org/monsti/api/util/template"
 )
 
 var availableLocales = []string{"de", "en"}
-
-type nodeSort struct {
-	Nodes  []*service.Node
-	Sorter func(left, right *service.Node) bool
-}
-
-func (s *nodeSort) Len() int {
-	return len(s.Nodes)
-}
-
-func (s *nodeSort) Swap(i, j int) {
-	s.Nodes[i], s.Nodes[j] = s.Nodes[j], s.Nodes[i]
-}
-
-func (s *nodeSort) Less(i, j int) bool {
-	return s.Sorter(s.Nodes[i], s.Nodes[j])
-}
 
 type eventCtx struct {
 	*service.Node
@@ -78,7 +62,7 @@ func getEvents(req *service.Request, s *service.Session, pastOnly,
 		rright := right.Fields["events.StartTime"].(*service.DateTimeField).Time
 		return lleft.Before(rright)
 	}
-	sort.Sort(sort.Reverse(&nodeSort{events, order}))
+	sort.Sort(sort.Reverse(&nodes.Sorter{events, order}))
 
 	eventCtxs := make([]eventCtx, len(events))
 	pastIdx := 0
