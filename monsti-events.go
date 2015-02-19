@@ -187,19 +187,19 @@ func setup(c *module.ModuleContext) error {
 		AddableTo: []string{"events.Events"},
 		Name:      i18n.GenLanguageMap(G("Event"), availableLocales),
 		Hide:      true,
-		Fields: []*service.NodeField{
+		Fields: []*service.FieldConfig{
 			{Id: "core.Title"},
 			{Id: "core.Body"},
 			{
 				Id:   "events.Place",
 				Name: i18n.GenLanguageMap(G("Place"), availableLocales),
-				Type: "Text",
+				Type: new(service.TextFieldType),
 			},
 			{
 				Id:       "events.StartTime",
 				Required: true,
 				Name:     i18n.GenLanguageMap(G("Start"), availableLocales),
-				Type:     "DateTime",
+				Type:     new(service.DateTimeFieldType),
 			},
 		},
 	}
@@ -211,7 +211,7 @@ func setup(c *module.ModuleContext) error {
 		Id:        "events.Events",
 		AddableTo: nil,
 		Name:      i18n.GenLanguageMap(G("Event list"), availableLocales),
-		Fields: []*service.NodeField{
+		Fields: []*service.FieldConfig{
 			{Id: "core.Title"},
 		},
 	}
